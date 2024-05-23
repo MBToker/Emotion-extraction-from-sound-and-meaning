@@ -36,10 +36,13 @@ from matplotlib.font_manager import FontProperties
 import sounddevice as sd
 import threading
 import tkinter as tk
-from tkinter import filedialog
 import tempfile
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from tkinter import ttk
+from tkinter import Canvas, Button, PhotoImage, filedialog
+from pathlib import Path
+from PIL import Image, ImageTk  # Importing PIL modules
+
 
 
 #-----FUNCTIONS-----#
@@ -427,30 +430,40 @@ def lstm_user_data_test(lstm_model_file, encoder_file, uploaded_df, data_folder,
 
 
 def prediction_table(predictions, name_list, encoder):
-    fig, ax = plt.subplots()
-    ax.set_title("Uploaded Files' Analysis")
+    fig, ax = plt.subplots(figsize=(12, len(predictions) * 0.5 + 2))  # Adjust the height based on the number of rows
+    #ax.set_title("Uploaded Files' Analysis", fontsize=16)
+    
+    """predictions_alter=['neutral','anger','surprise','joy','sadness', 'surprise', 'sadness','anger', 'anger', 'neutral', 'joy', 'sadness','joy','joy','neutral']
+    original_predictions=predictions_alter"""
     original_predictions = encoder.inverse_transform(predictions)
     table_data = [["File Names", "Emotions"]]
-    for i in range (len(predictions)):
+    
+    for i in range(len(predictions)):
         table_data.append([name_list[i], original_predictions[i]])
-
-    table = ax.table(cellText = table_data, loc = 'center', cellLoc='left')
+    
+    table = ax.table(cellText=table_data, loc='center', cellLoc='left', colLabels=None)
+    
     table.set_fontsize(14)
-    table.scale(1, 4)
+    table.scale(1, 1.5)  # Adjust scale to fit table into the figure
+    
     ax.axis('off')
+    
     for (row, col), cell in table.get_celld().items():
-        if (row == 0) or (col == -1):
-          cell.set_text_props(fontproperties=FontProperties(weight='bold'))
+        if row == 0:
+            cell.set_text_props(fontproperties=FontProperties(weight='bold'))
 
+    #plt.tight_layout()  # Use tight layout to minimize wasted space
     saved_path = 'graphs/table.png'
-    plt.savefig(saved_path) 
+    plt.savefig(saved_path)
+    plt.close()
     #plt.show()
+    
     return saved_path
 
 
 def prediction_percentages(encoder, predictions, name_list):
     possible_encodings = encoder.categories_[0] # First element is a list of possible emotions
-    softmax_probabilities = tf.nn.softmax(predictions) 
+    softmax_probabilities = tf.nn.softmax(predictions).numpy()
 
     for i, prediction in enumerate(softmax_probabilities): # Loops through every element and also keeps the index
         decoded_emotion = possible_encodings[np.argmax(prediction)]
@@ -526,104 +539,275 @@ def training_process(nltk_model_file, lstm_model_file, nltk_vectorizer_file, enc
     #lstm_model = load_model(lstm_model_file) # Load command
 
 
-def record_audio(duration, fs, filename, status_label):
-    status_label.config(text="Recording process has started. Please speak...", fg="blue")
-    recording = sd.rec(int(duration * fs), samplerate=fs, channels=1, dtype='float64')
-    sd.wait()
-    sf.write(filename, recording, fs)
-    status_label.config(text="Recording process has been completed.", fg="green")
+# Global variables to manage recording state
+is_paused = False
+recording_data = []
+recorded_duration = 0
+fs = 44100  # Sampling frequency
+temp_filename = "recorded_files/output_audio.wav"
 
+def record_audio(duration, fs, filename, status_label, pause_button, play_button, analyze_button):
+    global is_paused, recorded_duration, recording_data
+    is_paused = False
+    recording_data = []
+    recorded_duration = 0
 
-def analyze_emotion(folder, graph_label, result_label, nltk_model_file, nltk_vectorizer_file, lstm_model_file, encoder_file):
-    result_label.config(text="Extracting emotions from sound files...", fg="blue")
-    uploaded_df, name_list=user_upload_files(folder)
+    play_button.config(state="disabled")
+    status_label.config(text="Recording process has started. Please speak...", fg="white")
+
+    while recorded_duration < duration:
+        if is_paused:
+            sd.sleep(100)  # Short sleep to prevent busy-waiting
+            continue
+
+        remaining_duration = min(duration - recorded_duration, 1)  # Record in 1-second increments
+        new_recording = sd.rec(int(remaining_duration * fs), samplerate=fs, channels=1, dtype='float64')
+        sd.wait()
+        recording_data.append(new_recording)
+        recorded_duration += remaining_duration
+
+    complete_recording = np.concatenate(recording_data)
+    os.makedirs(os.path.dirname(filename), exist_ok=True)  # Ensure directory exists
+    sf.write(filename, complete_recording, fs)
+    status_label.config(text="Recording process has been completed.", fg="white")
+    
+    pause_button.config(state="disabled")  # Disable the pause button after recording completes
+    play_button.config(state="normal")  # Enable the play button after recording completes
+    analyze_button.config(state="normal")  # Enable the analyze button after recording completes
+
+def analyze_emotion(folder, graph_label, result_label, nltk_model_file, nltk_vectorizer_file, lstm_model_file, encoder_file, buttons, window):
+    # Disable all buttons during the analysis
+    previous_states = {}
+    for button in buttons:
+        previous_states[button] = button.cget("state")
+        button.config(state="disabled")
+
+    result_label.config(text="Extracting emotions from sound files...", fg="white")
+    uploaded_df, name_list = user_upload_files(folder)
     nltk_user_data_test(nltk_model_file, nltk_vectorizer_file, uploaded_df)
     graph_path = lstm_user_data_test(lstm_model_file, encoder_file, uploaded_df, folder, name_list)
+    window.geometry("950x1200")  # Resize window after analysis
+
+    # Display the graph
+    graph_label.config(text="")
+    graph_image = Image.open(graph_path)
+    graph_image = graph_image.resize((800, 700), Image.LANCZOS)
+    graph_photo = ImageTk.PhotoImage(graph_image)
+    graph_label.img = graph_photo
+    graph_label.config(image=graph_photo)
     
-    # Doğruluk oranını hesaplayıp gösterme
-    graph_label.config(text="Graph:")
-    graph_label.img = tk.PhotoImage(file=graph_path)
-    graph_label.config(image=graph_label.img)
 
-    result_label.config(text=f"Result Graph: ", fg="green")
+    result_label.config(text=f"Result Graph:", fg="white")
 
+    # Re-enable all buttons to their previous state
+    for button in buttons:
+        button.config(state=previous_states[button])
 
 def play_audio(filename):
     data, fs = librosa.load(filename, sr=None)
     sd.play(data, fs)
     sd.wait()
 
-    
-# GUI uygulaması
 class AudioAnalyzerApp:
     def __init__(self, root):
-        self.root = root
-        self.root.title("Emotion Extraction From Sound Application")
-        self.root.configure(bg="#f0f0f0")
+        self.window = root
+        self.window.geometry("950x600")
+        self.window.configure(bg="#3F3197")
+        self.window.resizable(False, False)
+        self.asset_path = Path("gui_related/frame0")
 
-        self.load_button = tk.Button(self.root, text="Select Folder", command=self.load_audio, font=("Helvetica", 12), bg="#4CAF50", fg="white", bd=2)
-        self.load_button.pack(pady=10)
+        canvas = Canvas(
+            self.window,
+            bg="#3F3197",
+            height=600,
+            width=950,
+            bd=0,
+            highlightthickness=0,
+            relief="ridge"
+        )
+        canvas.place(x=0, y=0)
+        canvas.create_rectangle(
+            0.0,
+            0.0,
+            950.0,
+            107.0,
+            fill="#6FA7A7",
+            outline=""
+        )
 
-        self.record_button = tk.Button(self.root, text="Record Your Sound", command=self.record_audio, font=("Helvetica", 12), bg="#008CBA", fg="white", bd=2)
-        self.record_button.pack(pady=5)
+        canvas.create_text(
+            187.0,
+            30.0,
+            anchor="nw",
+            text="Emotion Analysis From Voice",
+            fill="#1E1E1E",
+            font=("Ubuntu Bold", 40 * -1)
+        )
 
-        self.play_button = tk.Button(self.root, text="Listen Recorded Sound", command=self.play_recorded_audio, font=("Helvetica", 12), bg="#f44336", fg="white", bd=2, state="disabled")
-        self.play_button.pack(pady=5)
+        button_image_1 = tk.PhotoImage(file=self.asset_path / "button_1.png")
+        self.load_button = Button(
+            image=button_image_1,
+            borderwidth=0,
+            highlightthickness=0,
+            command=self.load_audio,
+            relief="flat"
+        )
+        self.load_button.place(
+            x=140.0,
+            y=149.0,
+            width=272.0,
+            height=92.0
+        )
+        self.load_button.image = button_image_1
 
-        self.analyze_button = tk.Button(self.root, text="Extract Emotion", command=self.analyze_emotion, font=("Helvetica", 12), bg="#FFC107", fg="white", bd=2, state="disabled")
-        self.analyze_button.pack(pady=5)
+        button_image_2 = tk.PhotoImage(file=self.asset_path / "button_2.png")
+        self.record_button = Button(
+            image=button_image_2,
+            borderwidth=0,
+            highlightthickness=0,
+            command=self.start_recording,
+            relief="flat"
+        )
+        self.record_button.place(
+            x=533.0,
+            y=149.0,
+            width=274.0,
+            height=92.0
+        )
+        self.record_button.image = button_image_2
 
-        self.status_label = tk.Label(self.root, text="", font=("Helvetica", 12), bg="#f0f0f0")
-        self.status_label.pack(pady=5)
+        button_image_3 = tk.PhotoImage(file=self.asset_path / "button_3.png")
+        self.play_button = Button(
+            image=button_image_3,
+            borderwidth=0,
+            highlightthickness=0,
+            command=self.play_recorded_audio,
+            relief="flat",
+            state="disabled"  
+        )
 
-        self.duration_label = tk.Label(self.root, text="", font=("Helvetica", 12), bg="#f0f0f0")
-        self.duration_label.pack(pady=5)
+        self.play_button.place(
+            x=140.0,
+            y=304.0,
+            width=272.0,
+            height=92.0
+        )
+        self.play_button.image = button_image_3
 
-        self.accuracy_label = tk.Label(self.root, text="", font=("Helvetica", 12), bg="#f0f0f0")
-        self.accuracy_label.pack(pady=5)
+        button_image_4 = tk.PhotoImage(file=self.asset_path / "button_4.png")
+        self.analyze_button = Button(
+            image=button_image_4,
+            borderwidth=0,
+            highlightthickness=0,
+            command=self.analyze_emotion,
+            relief="flat",
+            state="disabled"  
+        )
+        self.analyze_button.place(
+            x=535.0,
+            y=304.0,
+            width=272.0,
+            height=92.0
+        )
+        self.analyze_button.image = button_image_4
 
-        self.graph_label = tk.Label(self.root, text="", font=("Helvetica", 12), bg="#f0f0f0")
-        self.graph_label.pack(pady=5)
+        self.pause_button = Button(
+            text="Stop Recording",
+            borderwidth=0,
+            highlightthickness=0,
+            command=self.pause_continue_recording,
+            relief="flat",
+            bg="#FF5733",
+            fg="white"
+        )
+        self.pause_button.place(
+            x=535.0,
+            y=420.0,
+            width=272.0,
+            height=50.0
+        )
+        self.pause_button.config(state="disabled")
+
+        self.image_image_1 = tk.PhotoImage(file=self.asset_path / "image_1.png")
+        self.image_1 = canvas.create_image(
+            836.0,
+            53.0,
+            image=self.image_image_1
+        )
+
+        self.image_image_2 = tk.PhotoImage(file=self.asset_path / "image_2.png")
+        self.image_2 = canvas.create_image(
+            87.0,
+            54.0,
+            image=self.image_image_2
+        )
+
+        # Create a scrollable frame for the graph
+        self.scroll_canvas = Canvas(self.window, bg="#3F3197", height=600, width=800)
+        self.scroll_canvas.place(x=80, y=510)
+        self.scrollable_frame = tk.Frame(self.scroll_canvas, bg="#3F3197")
+        self.scrollable_frame.bind(
+            "<Configure>",
+            lambda e: self.scroll_canvas.configure(
+                scrollregion=self.scroll_canvas.bbox("all")
+            )
+        )
+        self.scroll_window = self.scroll_canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+
+        scrollbar = tk.Scrollbar(self.window, orient="vertical", command=self.scroll_canvas.yview)
+        self.scroll_canvas.configure(yscrollcommand=scrollbar.set)
+        scrollbar.place(x=880, y=510, height=500)
+
+        self.status_label = tk.Label(self.window, text="", font=("Helvetica", 12), bg="#3F3197", fg="white")
+        self.status_label.place(x=111, y=450)
+
+        self.graph_label = tk.Label(self.scrollable_frame, text="", font=("Helvetica", 12), bg="#3F3197", fg="white", height=880)
+        self.graph_label.place(x=111, y=0)
+        self.graph_label.pack()
 
     def load_audio(self):
         filename = filedialog.askdirectory(initialdir=os.getcwd(), title="Select a Directory")
         self.audio_file = filename
         if self.audio_file:
             self.analyze_button.config(state="normal")
-            self.play_button.config(state="normal")
+            #self.play_button.config(state="normal")
 
-    def record_audio(self):
-        duration = 10  
-        fs = 44100  
-        temp_filename = "recorded_files/output_audio.wav"
-        threading.Thread(target=record_audio, args=(duration, fs, temp_filename, self.status_label)).start()
+    def start_recording(self):
+        self.pause_button.config(state="normal")
+        self.analyze_button.config(state="disabled")
+        self.play_button.config(state="disabled")
+        threading.Thread(target=record_audio, args=(10, fs, temp_filename, self.status_label, self.pause_button, self.play_button, self.analyze_button)).start()
         self.audio_file = "recorded_files"
-        self.analyze_button.config(state="normal")
         self.play_button.config(state="normal")
+
+    def pause_continue_recording(self):
+        global is_paused
+        is_paused = not is_paused
+        if is_paused:
+            self.status_label.config(text="Recording paused.", fg="orange")
+            self.pause_button.config(text="Continue Recording")
+        else:
+            self.status_label.config(text="Recording continued. Please speak...", fg="white")
+            self.pause_button.config(text="Pause Recording")
 
     def analyze_emotion(self):
         nltk_model_file = "models/nltk_model.dat"
         lstm_model_file = "models/lstm_model.keras"
         nltk_vectorizer_file = "models/vectorizer.dat" 
         encoder_file = "models/lstm_encoder.dat"
+        buttons = [self.load_button, self.record_button, self.pause_button, self.play_button, self.analyze_button]
 
-        if hasattr(self, 'audio_file'):
-            threading.Thread(target=analyze_emotion, args=(self.audio_file, self.graph_label, self.status_label, nltk_model_file, nltk_vectorizer_file, lstm_model_file, encoder_file)).start()
+        if self.audio_file:
+            threading.Thread(target=analyze_emotion, args=(self.audio_file, self.graph_label, self.status_label, nltk_model_file, nltk_vectorizer_file, lstm_model_file, encoder_file, buttons, self.window)).start()
+
         else:
             self.status_label.config(text="Please upload files to use this function.", fg="red")
 
     def play_recorded_audio(self):
-        if hasattr(self, 'audio_file'):
-            if self.audio_file == 'recorded_files':
-                temp = self.audio_file
-                self.audio_file = "recorded_files/output_audio.wav"
-                threading.Thread(target=play_audio, args=(self.audio_file,)).start()
-                self.audio_file = temp
-            else:
-                self.status_label.config(text="This function only works for recorded .wav files", fg="red")
+        if self.audio_file == "recorded_files":
+            threading.Thread(target=play_audio, args=(temp_filename,)).start()
         else:
             self.status_label.config(text="Please record a .wav file first.", fg="red")
-        
 
 def run_training():
     nltk_model_file = "models/nltk_model.dat"
