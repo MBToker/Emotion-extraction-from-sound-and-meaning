@@ -63,7 +63,7 @@ Here are some images showing the GUI:
 <img src=https://github.com/MBToker/Emotion_extraction_from_sound_and_meaning/blob/main/graphs/UI_image.PNG>
 <img src=https://github.com/MBToker/Emotion_extraction_from_sound_and_meaning/blob/main/graphs/UI_image_table.PNG>
 
-## 4.5) Comparing Accuracy with Other Projects
+### 4.5) Comparing Accuracy with Other Projects
 Accuracy of the other projects that are done with the same dataset:
 <img src=https://github.com/MBToker/Emotion_extraction_from_sound_and_meaning/blob/main/graphs/accuracy_of_other_projects.png>
 Accuracy of our project:
