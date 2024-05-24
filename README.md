@@ -41,7 +41,33 @@ Confusion matrix of the test set:
 Scores of the model:
 <img src=https://github.com/MBToker/Emotion_extraction_from_sound_and_meaning/blob/main/graphs/scores.png>
 
-### 4.3) 
+### 4.3) Uploaded Files and Their Real Results' Comparison
+User uploads more than one files:
+<img src=https://github.com/MBToker/Emotion_extraction_from_sound_and_meaning/blob/main/graphs/table.png>
+Real values of these files are:
+<img src=https://github.com/MBToker/Emotion_extraction_from_sound_and_meaning/blob/main/graphs/real_values%20of_table.PNG>
+As we can see from the comparison of these results, anger and sadness, surprise and joy can be mixed up. We can come up with this result by looking at this comparison and confusion matrix
+
+### 4.4) Recorded Files' Results
+If there is only one sound file to extract emotion, graph changes. This graph shows the every emotion's percentage of the sound file. Here are some of the results:
+<br>
+<img src=https://github.com/MBToker/Emotion_extraction_from_sound_and_meaning/blob/main/graphs/percentages.png>
+<img src=https://github.com/MBToker/Emotion_extraction_from_sound_and_meaning/blob/main/graphs/percentages_anger.png>
+<img src=https://github.com/MBToker/Emotion_extraction_from_sound_and_meaning/blob/main/graphs/percentages_sadness.png>
+<img src=https://github.com/MBToker/Emotion_extraction_from_sound_and_meaning/blob/main/graphs/percentages_joy.png>
+<img src=https://github.com/MBToker/Emotion_extraction_from_sound_and_meaning/blob/main/graphs/percentages_anger1.png>
+
+### 4.4) GUI
+Here are some images showing the GUI:
+<br>
+<img src=https://github.com/MBToker/Emotion_extraction_from_sound_and_meaning/blob/main/graphs/UI_image.png>
+<img src=https://github.com/MBToker/Emotion_extraction_from_sound_and_meaning/blob/main/graphs/UI_image_table.png>
+
+
+
+
+
+
 
 
 
