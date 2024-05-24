@@ -60,8 +60,16 @@ If there is only one sound file to extract emotion, graph changes. This graph sh
 ### 4.4) GUI
 Here are some images showing the GUI:
 <br>
-<img src=https://github.com/MBToker/Emotion_extraction_from_sound_and_meaning/blob/main/graphs/UI_image.png>
-<img src=https://github.com/MBToker/Emotion_extraction_from_sound_and_meaning/blob/main/graphs/UI_image_table.png>
+<img src=https://github.com/MBToker/Emotion_extraction_from_sound_and_meaning/blob/main/graphs/UI_image.PNG>
+<img src=https://github.com/MBToker/Emotion_extraction_from_sound_and_meaning/blob/main/graphs/UI_image_table.PNG>
+
+## 4.5) Comparing Accuracy with Other Projects
+Accuracy of the other projects that are done with the same dataset:
+<img src=https://github.com/MBToker/Emotion_extraction_from_sound_and_meaning/blob/main/graphs/accuracy_of_other_projects.png>
+Accuracy of our project:
+<img src=https://github.com/MBToker/Emotion_extraction_from_sound_and_meaning/blob/main/graphs/accuracy.png>
+As we can see from the comparison above, other projects' accuracy results are below %70. This project's accuracy changes between %78-%80. By adding the sentiment analysis to the emotion extraction we build a better model.
+
 
 
 
