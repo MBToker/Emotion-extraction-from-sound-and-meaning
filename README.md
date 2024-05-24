@@ -20,8 +20,31 @@ Project has 3 different Python files.
 ### 3.2) Model Optimization
 "model_optimization" uses TensorBoard to find the optimal hyperparameters for LSTM model. Results are saved as log files, so they can be examined if wanted.
 ### 3.3) Main Program
-"main_file.py" used to run the main project. It has a simple design of the application. User can upload files and record its sound for the emotion extraction process. Resulting graphs can be seen in Graph folder in the project. Also, user can see the performance of the model by running training function.
+"main_file.py" used to run the main project. It has a simple application UI. User can upload files and record its sound for the emotion extraction process. After the extraction process, resulting graphs will be seen on the application screen. Resulting graphs is saved in the Graph folder of the project. Also, user can see the performance of the model by running training function.
 
 ## 4) Results
+### 4.1) Model Optimization
+Accuracy results of all of the models in optimization process:
+<img src=https://github.com/MBToker/Emotion_extraction_from_sound_and_meaning/blob/main/graphs/optimization_graph1.png>
+<br>From all of the models, two of the most accurate models are choosen. Accuracy of these two models:
+<img src=https://github.com/MBToker/Emotion_extraction_from_sound_and_meaning/blob/main/graphs/optimization_graph2.png>
+<br>Loss of these two models:
+<img src=https://github.com/MBToker/Emotion_extraction_from_sound_and_meaning/blob/main/graphs/optimization_graph3.png>
+
+### 4.2) Training and Test Set Results
+Accuracy results of the trained model:
+<img src=https://github.com/MBToker/Emotion_extraction_from_sound_and_meaning/blob/main/graphs/accuracy.png>
+Loss of the trained model:
+<img src=https://github.com/MBToker/Emotion_extraction_from_sound_and_meaning/blob/main/graphs/loss.PNG>
+Confusion matrix of the test set:
+<img src=https://github.com/MBToker/Emotion_extraction_from_sound_and_meaning/blob/main/graphs/confusion_matrix.png>
+Scores of the model:
+<img src=https://github.com/MBToker/Emotion_extraction_from_sound_and_meaning/blob/main/graphs/scores.png>
+
+### 4.3) 
+
+
+
+
 
 
