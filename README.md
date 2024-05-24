@@ -20,4 +20,8 @@ Project has 3 different Python files.
 ### 3.2) Model Optimization
 "model_optimization" uses TensorBoard to find the optimal hyperparameters for LSTM model. Results are saved as log files, so they can be examined if wanted.
 ### 3.3) Main Program
-"main_file.py" used to run the main project. It has a simple design of the application. User can upload files and record its sound for the emotion extraction process
+"main_file.py" used to run the main project. It has a simple design of the application. User can upload files and record its sound for the emotion extraction process. Resulting graphs can be seen in Graph folder in the project. Also, user can see the performance of the model by running training function.
+
+## 4) Results
+
+
